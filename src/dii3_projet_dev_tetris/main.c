@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "enums.h"
+#include "soundbank.h"
 
 #define SPRITE_ADDRESS 0x4000
 #define BACKGROUND1_ADDRESS 0x5000
@@ -33,6 +34,14 @@ extern char snesfont;
 extern char gfxpsrite, gfxpsrite_end;
 extern char palsprite, palsprite_end;
 extern char mapsprite, mapsprite_end;
+extern char linebrr,linebrrend;
+extern char placebrr,placebrrend;
+
+brrsamples linesound;
+brrsamples placesound;
+
+extern char __SOUNDBANK__0;
+extern char __SOUNDBANK__1;
 
 extern char m0, m0_end, p0, p0_end, t0, t0_end;
 
@@ -237,6 +246,9 @@ void resetGame(){
     next_piece_obj.obj.piece = pieces[nb];
 
     resetPiece();
+    spcPlay(1);
+	        // Update music / sfx stream and wait vbl
+	spcProcess();
 }
 
 COLLISION getCollision(){
@@ -335,12 +347,13 @@ void rotatePiece(){
     }
 }
 
-void removeFullRows(){
+int removeFullRows(){
     int i;
     u16 y;
     u16 x;
     bool full_row = true;
     int new_y;
+    int isrow =0;
     
     while (full_row == true)
     {
@@ -381,10 +394,15 @@ void removeFullRows(){
                         dmaCopyVram(&plateau_obj.obj.plateau[plateau_cpt + LARGEUR_PLATEAU * 2], dest_address + LARGEUR_BG1, LARGEUR_PLATEAU * 2);
                     }
                 }
+                isrow = 1;
+                
+                
             }
+            
         }
+        
     }
-    
+   return isrow; 
 }
 
 bool movePiece(unsigned short padValue){
@@ -472,8 +490,17 @@ bool movePiece(unsigned short padValue){
             }
         }
         showPiece(false);
-        removeFullRows();
+        if (removeFullRows()){
+            spcPlaySound(1);
+        }else
+        {
+           spcPlaySound(0);
+        }
+        
         resetPiece();
+        
+        
+         WaitForVBlank();
         return true;
     }
     return false;
@@ -484,9 +511,27 @@ bool lastGamePauseState = false;
 int main(void){
     unsigned short pad0;
     u8 i, idSprite;
-
+    spcBoot();
     consoleInit();
 
+    	// Set give soundbank
+	// spcSetBank(&__SOUNDBANK__);
+	spcSetBank(&__SOUNDBANK__1);
+	spcSetBank(&__SOUNDBANK__0);
+
+    // allocate around 10K of sound ram (39 256-byte blocks)
+	spcAllocateSoundRegion(39);
+
+	// Load music
+	spcLoad(0);
+    setMode(BG_MODE1,0);  bgSetDisable(1);  bgSetDisable(2);
+    spcSetModuleVolume(50);
+    spcPlay(0);
+	// Update music / sfx stream and wait vbl
+	spcProcess();
+    spcSetSoundEntry(15, 1, 6, &placebrrend-&placebrr, &placebrr, &placesound);
+	spcSetSoundEntry(15, 15,  6, &linebrrend-&linebrr, &linebrr, &linesound);
+	
     resetVram();
     resetGame();
 
@@ -494,9 +539,12 @@ int main(void){
     {
         pad0 = padsCurrent(0);
         
-		// spcProcess();
+		spcProcess();
 
         if(gameOver == true){
+             spcStop();
+	        // Update music / sfx stream and wait vbl
+	        spcProcess();
             showPiece(false);
             consoleDrawText(1, 2, "Game Over");
             consoleDrawText(2, 4, "Press A");

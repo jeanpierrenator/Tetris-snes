@@ -5,6 +5,7 @@
 snesfont:
 .incbin "pvsneslibfont.pic"
 
+
 mapsprite:
 .incbin "sprite8.map"
 mapsprite_end:
@@ -26,4 +27,14 @@ t0_end:
 p0: .incbin "bg0.pal"
 p0_end:
 
+linebrr:
+.incbin "line.brr"
+linebrrend:
+
+placebrr:
+.incbin "place.brr"
+placebrrend:
+
+
 .ends
+

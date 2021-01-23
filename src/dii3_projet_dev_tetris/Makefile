@@ -40,12 +40,21 @@ export OUTPUT	:=	$(CURDIR)/$(TARGET)
 CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
 SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.asm)))
 
+export AUDIOFILES :=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.it)))
+
+ifneq ($(AUDIOFILES),)
+ifeq ($(wildcard soundbank.asm),)
+	SFILES		:=	soundbank.asm $(SFILES)
+endif
+endif
+
 #---------------------------------------------------------------------------------
 export OFILES	:=	$(BINFILES:.bin=.obj) $(CFILES:.c=.obj) $(SFILES:.asm=.obj)
  
 export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 					$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
 					-I$(CURDIR)/$(BUILD)
+SMCONVFLAGS	:= -l -s -o soundbank -v -b 5
 
 GTITLE 		:= -ht"$(TARGET)"
  
@@ -59,7 +68,7 @@ all	:	bitmaps $(OUTPUT).sfc
 
 clean:
 	@echo clean ...
-	@rm -f $(OFILES) $(TARGET).sfc $(TARGET).sym *.map *.pic *.pal
+	@rm -f $(OFILES) $(TARGET).sfc $(TARGET).sym *.map *.pic *.pal *.bnk soundbank.asm soundbank.h
 
 #---------------------------------------------------------------------------------
 pvsneslibfont.pic: pvsneslibfont.bmp
@@ -76,7 +85,19 @@ fond.pic: bg0.bmp
 	@echo convert bitmap ... $(notdir $@)
 	$(GFXCONV) -gs8 -pc16 -po16 -pe2 -n -pr -m $<
 
-bitmaps : pvsneslibfont.pic sprite8.pic fond.pic
+soundbank.asm : $(AUDIOFILES)
+	@echo Compiling Soundbank ... 
+	@$(SMCONV) $(SMCONVFLAGS) $^
+
+line.brr: sfxJump.wav
+	@echo convert wav file ... $(notdir $<)
+	$(BRCONV) -e $< $@
+
+place.brr: dano.wav
+	@echo convert wav file ... $(notdir $<)
+	$(BRCONV) -e $< $@
+
+bitmaps : pvsneslibfont.pic sprite8.pic fond.pic soundbank.asm line.brr place.brr
 
 #---------------------------------------------------------------------------------
 $(OUTPUT).sfc	: $(OFILES)

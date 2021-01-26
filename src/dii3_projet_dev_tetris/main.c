@@ -37,6 +37,14 @@ extern char mapsprite, mapsprite_end;
 extern char linebrr,linebrrend;
 extern char placebrr,placebrrend;
 
+extern char patterns, patterns_end;
+extern char palette, palette_end;
+extern char map, map_end;
+
+extern char patternslogo, patternslogo_end;
+extern char palettelogo, palettelogo_end;
+extern char maplogo, maplogo_end;
+
 brrsamples linesound;
 brrsamples placesound;
 
@@ -182,11 +190,36 @@ void resetPiece(){
     }
 }
 
+void bootScreen(){
+    setMode(BG_MODE1,0);
+    bgInitTileSet(0, &patterns, &palette, 0, (&patterns_end - &patterns), (&palette_end - &palette), BG_16COLORS, 0x4000);
+	bgInitMapSet(0, &map, (&map_end - &map),SC_32x32, 0x0000);
+
+    u8 timer = 0;
+    setScreenOn();
+
+	while ( timer<160)
+	{
+		timer++;
+		WaitForVBlank();
+	}
+	bgInitTileSet(0, &patternslogo, &palettelogo, 0, (&patternslogo_end - &patternslogo), (&palettelogo_end - &palettelogo), BG_16COLORS, 0x4000);
+    bgInitMapSet(0, &maplogo, (&maplogo_end - &maplogo),SC_32x32, 0x0000);
+	setScreenOn();
+	timer = 0;
+	while ( timer<160)
+	{
+		timer++;
+		WaitForVBlank();
+	}
+}
+
 void resetVram(){
     dmaClearVram();
 
+  
+    bootScreen();
     consoleInitText(2, 0, &snesfont);
-
     // Init Sprites gfx and palette with default size of 16x16
 	oamInitGfxSet(&gfxpsrite, (&gfxpsrite_end-&gfxpsrite), &palsprite, (&palsprite_end-&palsprite),0, SPRITE_ADDRESS, OBJ_SIZE8);
 

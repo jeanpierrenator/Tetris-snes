@@ -97,7 +97,7 @@ place.brr: dano.wav
 	@echo convert wav file ... $(notdir $<)
 	$(BRCONV) -e $< $@
 
-bitmaps : pvsneslibfont.pic sprite8.pic fond.pic soundbank.asm line.brr place.brr
+bitmaps : pvsneslibfont.pic sprite8.pic fond.pic pvsneslib.pic logo_polytech_1.pic soundbank.asm line.brr place.brr
 
 #---------------------------------------------------------------------------------
 $(OUTPUT).sfc	: $(OFILES)

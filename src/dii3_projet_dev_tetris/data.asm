@@ -35,6 +35,30 @@ placebrr:
 .incbin "place.brr"
 placebrrend:
 
+patterns:
+.incbin "pvsneslib.pic"
+patterns_end:
+
+patternslogo:
+.incbin "logo_polytech_1.pic"
+patternslogo_end:
+
+map:
+.incbin "pvsneslib.map"
+map_end:
+
+palette:
+.incbin "pvsneslib.pal"
+palette_end:
+
+
+maplogo:
+.incbin "logo_polytech_1.map"
+maplogo_end:
+
+palettelogo:
+.incbin "logo_polytech_1.pal"
+palettelogo_end:
 
 .ends
 

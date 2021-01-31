@@ -97,7 +97,24 @@ place.brr: dano.wav
 	@echo convert wav file ... $(notdir $<)
 	$(BRCONV) -e $< $@
 
-bitmaps : pvsneslibfont.pic sprite8.pic fond.pic pvsneslib.pic logo_polytech_1.pic soundbank.asm line.brr place.brr
+bmpmenuup.pic: bmpmenuup.bmp
+	@echo convert bitmap ... $(notdir $@)
+	$(GFXCONV) -pr -pc16 -n -gs8 -pe2  -fbmp -m $<
+
+bmpmenucenter.pic: bmpmenucenter.bmp
+	@echo convert bitmap ... $(notdir $@)
+	$(GFXCONV) -pr -pc16 -n -gs8 -pe1  -fbmp -m $<
+
+bmpmenudown.pic: bmpmenudown.bmp
+	@echo convert bitmap ... $(notdir $@)
+	$(GFXCONV) -pr -pc4 -n -gs8 -pe0  -fbmp -m $<
+
+
+bmpmenutitle.pic: bmpmenutitle.bmp
+	@echo convert bitmap ... $(notdir $@)
+	$(GFXCONV) -pr -pc16 -n -gs8 -pe1  -fbmp -m $<
+
+bitmaps : pvsneslibfont.pic sprite8.pic fond.pic pvsneslib.pic logo_polytech_1.pic soundbank.asm line.brr place.brr bmpmenudown.pic bmpmenuup.pic bmpmenucenter.pic  bmpmenutitle.pic
 
 #---------------------------------------------------------------------------------
 $(OUTPUT).sfc	: $(OFILES)

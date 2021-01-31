@@ -45,11 +45,29 @@ extern char patternslogo, patternslogo_end;
 extern char palettelogo, palettelogo_end;
 extern char maplogo, maplogo_end;
 
+extern char menubg, menubg_end;
+extern char menubgPalette, menubgPalette_end;
+extern char menubgMap, menubgMap_end;
+
+extern char menubg2, menubg2_end;
+extern char menubg2Palette, menubg2Palette_end;
+extern char menubg2Map, menubg2Map_end;
+
+extern char menubg3, menubg3_end;
+extern char menubg3Palette, menubg3Palette_end;
+extern char menubg3Map, menubg3Map_end;
+
+
+extern char menubg4, menubg4_end;
+extern char menubg4Palette, menubg4Palette_end;
+extern char menubg4Map, menubg4Map_end;
+
 brrsamples linesound;
 brrsamples placesound;
 
 extern char __SOUNDBANK__0;
 extern char __SOUNDBANK__1;
+extern char __SOUNDBANK__2;
 
 extern char m0, m0_end, p0, p0_end, t0, t0_end;
 
@@ -214,11 +232,111 @@ void bootScreen(){
 	}
 }
 
+void menu()
+{
+    spcLoad(0);
+    spcPlay(0); 
+    spcSetModuleVolume(100);
+    spcProcess();
+    short scrX1=0, scrY1=60;
+	short scrX2=0, scrY2=0; 
+	short scrY3=0;
+	short sens =0, sens1 =0;
+	short timer = 0;
+	unsigned short pad0 =0;
+    bgInitTileSet(2, &menubg, &menubgPalette, 0, (&menubg_end - &menubg), 16*2, BG_16COLORS, 0x3000);
+	bgInitTileSet(1, &menubg3, &menubg3Palette, 1, (&menubg3_end - &menubg3), 16*2, BG_16COLORS, 0x2000);
+	bgInitTileSet(0, &menubg2, &menubg2Palette, 2, (&menubg2_end - &menubg2), 16*2, BG_16COLORS, 0x1000);
+		
+	
+	bgInitMapSet(2, &menubgMap, (&menubgMap_end - &menubgMap),SC_32x32, 0x0000);
+	bgInitMapSet(1, &menubg3Map, (&menubg3Map_end - &menubg3Map),SC_32x32, 0x0400);
+	bgInitMapSet(0, &menubg2Map, (&menubg2Map_end - &menubg2Map),SC_32x32, 0x0800);
+
+    	setMode(BG_MODE1,0);  
+	setScreenOn();
+
+    while (pad0 != KEY_START)
+	{
+		WaitForVBlank();
+		pad0 = padsCurrent(0);
+		scrX1++;  scrX2--;
+		if(sens == 0 && scrY2 <0 && timer == 0){
+			scrY2++;
+		}
+		if(sens == 1 && scrY2 >-20  && timer == 0){
+			scrY2--;
+		}
+		if(scrY2 >= 0){
+			sens = 1;
+		}
+		if(scrY2 <= -20){
+			sens = 0;
+		}
+
+
+		if(sens1 == 0 && scrY1 <60 && timer == 0){
+			scrY1++;
+		}
+		if(sens1 == 1 && scrY1 >40  && timer == 0){
+			scrY1--;
+		}
+		if(scrY1 >= 60){
+			sens1 = 1;
+		}
+		if(scrY1 <= 40){
+			sens1 = 0;
+		}
+
+		timer++;
+		if(timer > 3){
+			timer = 0;
+		}
+		bgSetScroll(0, scrX1,scrY1);
+		//bgSetScroll(1, scrY,0);
+		bgSetScroll(2, scrX2,scrY2);
+    }
+        while (scrY1 <72 || scrY2 > -20 || scrY3 <50)
+	{
+		scrX1++;  scrX2--;
+		if(scrY1 <72){
+		scrY1++;
+		}
+		if(scrY2  > -20){
+		scrY2--;
+		}
+		if(scrY3 < 50){
+			scrY3++;
+		}
+		WaitForVBlank();
+		bgSetScroll(0, scrX1,scrY1);
+		bgSetScroll(1, 0,scrY3);
+		bgSetScroll(2, scrX2,scrY2);
+	}
+    //consoleDrawText(0,0,"player1");
+	bgInitTileSet(1, &menubg4, &menubg4Palette, 1, (&menubg4_end - &menubg4), 16*2, BG_16COLORS, 0x2000);
+	bgInitMapSet(1, &menubg4Map, (&menubg4Map_end - &menubg4Map),SC_32x32, 0x0400);
+	setScreenOn();
+	// Wait for nothing :P
+	while(pad0 != KEY_A) {
+        pad0 = padsCurrent(0);
+		WaitForVBlank();
+		scrX1++;  scrX2--;
+        
+		bgSetScroll(0, scrX1,scrY1);
+		bgSetScroll(1, 0,0);
+		bgSetScroll(2, scrX2,scrY2);
+		
+		}
+	
+
+}
+
 void resetVram(){
     dmaClearVram();
 
   
-    bootScreen();
+   
     consoleInitText(2, 0, &snesfont);
     // Init Sprites gfx and palette with default size of 16x16
 	oamInitGfxSet(&gfxpsrite, (&gfxpsrite_end-&gfxpsrite), &palsprite, (&palsprite_end-&palsprite),0, SPRITE_ADDRESS, OBJ_SIZE8);
@@ -548,7 +666,7 @@ int main(void){
     consoleInit();
 
     	// Set give soundbank
-	// spcSetBank(&__SOUNDBANK__);
+	spcSetBank(&__SOUNDBANK__2);
 	spcSetBank(&__SOUNDBANK__1);
 	spcSetBank(&__SOUNDBANK__0);
 
@@ -556,18 +674,21 @@ int main(void){
 	spcAllocateSoundRegion(39);
 
 	// Load music
-	spcLoad(0);
+	
     setMode(BG_MODE1,0);  bgSetDisable(1);  bgSetDisable(2);
     spcSetModuleVolume(50);
-    spcPlay(0);
+    
 	// Update music / sfx stream and wait vbl
 	spcProcess();
     spcSetSoundEntry(15, 1, 6, &placebrrend-&placebrr, &placebrr, &placesound);
 	spcSetSoundEntry(15, 15,  6, &linebrrend-&linebrr, &linebrr, &linesound);
-	
+	 bootScreen();
+    menu();
     resetVram();
     resetGame();
-
+    spcLoad(1);
+    spcPlay(0); 
+    spcSetModuleVolume(100);
     while (1)
     {
         pad0 = padsCurrent(0);

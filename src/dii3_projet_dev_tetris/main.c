@@ -186,7 +186,7 @@ void resetPiece(){
     piece_obj.rotation = DEG_0;
     piece_obj.obj.piece = next_piece_obj.obj.piece;
     
-    int nb = rand() & 0x07;
+    int nb = fpsCounter & 0x07;
     nb = nb == 7 ? 0 : nb;
     next_piece_obj.obj.piece = pieces[nb];
 
@@ -322,7 +322,7 @@ void menu()
         pad0 = padsCurrent(0);
 		WaitForVBlank();
 		scrX1++;  scrX2--;
-        
+        fpsCounter++;
 		bgSetScroll(0, scrX1,scrY1);
 		bgSetScroll(1, 0,0);
 		bgSetScroll(2, scrX2,scrY2);
@@ -682,8 +682,8 @@ int main(void){
 	spcProcess();
     spcSetSoundEntry(15, 1, 6, &placebrrend-&placebrr, &placebrr, &placesound);
 	spcSetSoundEntry(15, 15,  6, &linebrrend-&linebrr, &linebrr, &linesound);
-	 bootScreen();
-    menu();
+	// bootScreen();
+    //menu();
     resetVram();
     resetGame();
     spcLoad(1);

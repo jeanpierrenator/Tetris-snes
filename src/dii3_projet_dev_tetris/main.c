@@ -392,7 +392,7 @@ void resetGame(){
     next_piece_obj.x = 3;
     next_piece_obj.y = 10;
     next_piece_obj.rotation = DEG_0;
-    int nb = rand() & 0x07;
+    int nb = fpsCounter & 0x07;
     nb = nb == 7 ? 0 : nb;
     next_piece_obj.obj.piece = pieces[nb];
 
@@ -682,8 +682,8 @@ int main(void){
 	spcProcess();
     spcSetSoundEntry(15, 1, 6, &placebrrend-&placebrr, &placebrr, &placesound);
 	spcSetSoundEntry(15, 15,  6, &linebrrend-&linebrr, &linebrr, &linesound);
-	// bootScreen();
-    //menu();
+	bootScreen();
+    menu();
     resetVram();
     resetGame();
     spcLoad(1);

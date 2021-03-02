@@ -145,6 +145,12 @@ objet_t plateau_obj;
 
 objet_t next_piece_obj;
 
+objet_t piece_obj2;
+objet_t plateau_obj2;
+
+objet_t next_piece_obj2;
+
+
 unsigned int pieceMove = 0;
 unsigned int pieceMove2 = 0;
 ROTATION lastRotation = DEG_0;
@@ -156,13 +162,13 @@ bool gameOver = false;
 bool pauseGame = false;
 unsigned int time_start, time_end;
 
-int getPos(u16 cpt, u16* x, u16* y, int* lignes, int* cols){
-    if(piece_obj.rotation & (DEG_0 | DEG_180)){
+int getPos(u16 cpt, u16* x, u16* y, int* lignes, int* cols,objet_t *piece_obj_ref){
+    if(piece_obj_ref->rotation & (DEG_0 | DEG_180)){
         *y = cpt / NOMBRE_COLS_PIECE;
         *x = cpt - *y * NOMBRE_COLS_PIECE;
         *lignes = NOMBRE_COLS_PIECE;
         *cols = NOMBRE_LIGNES_PIECE;
-    }else if(piece_obj.rotation & (DEG_90 | DEG_270)){
+    }else if(piece_obj_ref->rotation & (DEG_90 | DEG_270)){
         *y = cpt / NOMBRE_LIGNES_PIECE;
         *x = cpt - *y * NOMBRE_LIGNES_PIECE;
         *lignes = NOMBRE_LIGNES_PIECE;
@@ -180,15 +186,15 @@ void showPiece(bool visible){
     }
 }
 
-void resetPiece(){
-    piece_obj.x = plateau_obj.x + (LARGEUR_PLATEAU - NOMBRE_COLS_PIECE) / 2;
-    piece_obj.y = plateau_obj.y;
-    piece_obj.rotation = DEG_0;
-    piece_obj.obj.piece = next_piece_obj.obj.piece;
+void resetPiece(objet_t * piece_obj_ref,objet_t *plateau_obj_ref,objet_t *next_piece_obj_ref){
+    piece_obj_ref->x = plateau_obj_ref->x + (LARGEUR_PLATEAU - NOMBRE_COLS_PIECE) / 2;
+    piece_obj_ref->y = plateau_obj_ref->y;
+    piece_obj_ref->rotation = DEG_0;
+    piece_obj_ref->obj.piece = next_piece_obj_ref->obj.piece;
     
     int nb = fpsCounter & 0x07;
     nb = nb == 7 ? 0 : nb;
-    next_piece_obj.obj.piece = pieces[nb];
+    next_piece_obj_ref->obj.piece = pieces[nb];
 
     time_start = fpsCounter;
     
@@ -198,11 +204,11 @@ void resetPiece(){
     u8 i;
     for (i = 0; i < TAILLE_PIECE; ++i)
     {
-        if(next_piece_obj.obj.piece.schema[i] == 1 && idSprite < NOMBRE_BLOCS_PIECE * 2){
+        if(next_piece_obj_ref->obj.piece.schema[i] == 1 && idSprite < NOMBRE_BLOCS_PIECE * 2){
             u16 y = i / NOMBRE_COLS_PIECE;
             u16 x = i - y * NOMBRE_COLS_PIECE;
 
-            oamSet(idSprite * 4, (next_piece_obj.x + x) * 8, (next_piece_obj.y + y) * 8, 3, 0, 0, next_piece_obj.obj.piece.sprite_offset, 0);
+            oamSet(idSprite * 4, (next_piece_obj_ref->x + x) * 8, (next_piece_obj_ref->y + y) * 8, 3, 0, 0, next_piece_obj_ref->obj.piece.sprite_offset, 0);
             ++idSprite;
         }
     }
@@ -361,6 +367,36 @@ void resetVram(){
     WaitForVBlank();
 }
 
+void initPiece(objet_t*  next_piece_obj_ref)
+{
+    next_piece_obj_ref->x = 3;
+    next_piece_obj_ref->y = 10;
+    next_piece_obj_ref->rotation = DEG_0;
+    int nb = fpsCounter & 0x07;
+    nb = nb == 7 ? 0 : nb;
+    next_piece_obj_ref->obj.piece = pieces[nb];
+}
+
+void initPlateau(objet_t* plateau_obj_ref)
+{
+    
+    plateau_obj_ref->x = PLATEAU_X;
+    plateau_obj_ref->y = PLATEAU_Y;
+    plateau_obj_ref->rotation = DEG_0;
+
+    u16 i;
+    for (i = 0; i < TAILLE_PLATEAU * 2; ++i)
+    {
+        plateau_obj_ref->obj.plateau[i] = 0;
+    }
+    for (i = 0 ; i < HAUTEUR_PLATEAU; ++i)
+    {
+        u16 dest_address = BACKGROUND1_MAP_ADDRESS + (plateau_obj_ref->y + i) * LARGEUR_BG1 + plateau_obj_ref->x;
+        WaitForVBlank();
+        dmaCopyVram(&plateau_obj_ref->obj.plateau[i * LARGEUR_PLATEAU * 2], dest_address, LARGEUR_PLATEAU * 2);
+    }
+}
+
 void resetGame(){
     scoreClear(&score);
     gameOver = false;
@@ -372,69 +408,49 @@ void resetGame(){
     consoleDrawText(2, 4, "       ");
     consoleDrawText(1, 5, "          ");
 
-    plateau_obj.x = PLATEAU_X;
-    plateau_obj.y = PLATEAU_Y;
-    plateau_obj.rotation = DEG_0;
-
-    u16 i;
-    for (i = 0; i < TAILLE_PLATEAU * 2; ++i)
-    {
-        plateau_obj.obj.plateau[i] = 0;
-    }
-    for (i = 0 ; i < HAUTEUR_PLATEAU; ++i)
-    {
-        u16 dest_address = BACKGROUND1_MAP_ADDRESS + (plateau_obj.y + i) * LARGEUR_BG1 + plateau_obj.x;
-        WaitForVBlank();
-        dmaCopyVram(&plateau_obj.obj.plateau[i * LARGEUR_PLATEAU * 2], dest_address, LARGEUR_PLATEAU * 2);
-    }
     
 
-    next_piece_obj.x = 3;
-    next_piece_obj.y = 10;
-    next_piece_obj.rotation = DEG_0;
-    int nb = fpsCounter & 0x07;
-    nb = nb == 7 ? 0 : nb;
-    next_piece_obj.obj.piece = pieces[nb];
-
-    resetPiece();
+    initPlateau(&plateau_obj);
+    initPiece(&next_piece_obj);
+    resetPiece(&piece_obj,&plateau_obj,&next_piece_obj);
     spcPlay(1);
 	        // Update music / sfx stream and wait vbl
 	spcProcess();
 }
 
-COLLISION getCollision(){
+COLLISION getCollision(objet_t * piece_obj_ref,objet_t * plateau_obj_ref){
     COLLISION col = NONE;
     
-    u16 y = piece_obj.y - plateau_obj.y;
-    u16 x = piece_obj.x - plateau_obj.x;
+    u16 y = piece_obj_ref->y - plateau_obj_ref->y;
+    u16 x = piece_obj_ref->x - plateau_obj_ref->x;
 
     u16 piece_cpt;
     u16 plateau_cpt;
     for (piece_cpt = 0; piece_cpt < TAILLE_PIECE; ++piece_cpt)
     {
-        if(piece_obj.obj.piece.schema[piece_cpt] == 1){
+        if(piece_obj_ref->obj.piece.schema[piece_cpt] == 1){
             u16 piece_y;
             u16 piece_x;
             u16 lignes;
             u16 cols;
-            getPos(piece_cpt, &piece_x, &piece_y, &lignes, &cols);
+            getPos(piece_cpt, &piece_x, &piece_y, &lignes, &cols,piece_obj_ref);
 
             u16 plateau_cpt = (y + piece_y) * LARGEUR_PLATEAU * 2 + (x + piece_x) * 2;
             
-            if(x + piece_x < 0 || x + piece_x > LARGEUR_PLATEAU - 1 || y + piece_y < 0 || y + piece_y > HAUTEUR_PLATEAU - 1 || plateau_obj.obj.plateau[plateau_cpt] != NONE){
+            if(x + piece_x < 0 || x + piece_x > LARGEUR_PLATEAU - 1 || y + piece_y < 0 || y + piece_y > HAUTEUR_PLATEAU - 1 || plateau_obj_ref->obj.plateau[plateau_cpt] != NONE){
                 col |= INTERNE;
             }
 
-            if(x + piece_x <= 0 || plateau_obj.obj.plateau[plateau_cpt - 1] != NONE){
+            if(x + piece_x <= 0 || plateau_obj_ref->obj.plateau[plateau_cpt - 1] != NONE){
                 col |= GAUCHE;
             }
-            if(x + piece_x >= LARGEUR_PLATEAU - 1 || plateau_obj.obj.plateau[plateau_cpt + 1] != NONE){
+            if(x + piece_x >= LARGEUR_PLATEAU - 1 || plateau_obj_ref->obj.plateau[plateau_cpt + 1] != NONE){
                 col |= DROITE;
             }
-            if(y + piece_y  <= 0 || plateau_obj.obj.plateau[plateau_cpt - LARGEUR_PLATEAU * 2] != NONE){
+            if(y + piece_y  <= 0 || plateau_obj_ref->obj.plateau[plateau_cpt - LARGEUR_PLATEAU * 2] != NONE){
                 col |= HAUT;
             }
-            if(y + piece_y >= HAUTEUR_PLATEAU -1 || plateau_obj.obj.plateau[plateau_cpt + LARGEUR_PLATEAU * 2] != NONE){
+            if(y + piece_y >= HAUTEUR_PLATEAU -1 || plateau_obj_ref->obj.plateau[plateau_cpt + LARGEUR_PLATEAU * 2] != NONE){
                 col |= BAS;
             }
         }
@@ -442,7 +458,7 @@ COLLISION getCollision(){
     return col;
 }
 
-void rotatePiece(){
+void rotatePiece(objet_t * piece_obj_ref){
     u8 newSchema[8];
 
     u16 i;
@@ -458,10 +474,10 @@ void rotatePiece(){
 
     for (i = 0; i < TAILLE_PIECE; ++i)
     {
-        getPos(i, &x, &y, &lignes, &cols);
+        getPos(i, &x, &y, &lignes, &cols,piece_obj_ref);
         u16 new_x = cols - 1 - y;
         u16 new_y = x;
-        newSchema[new_y * cols + new_x] = piece_obj.obj.piece.schema[i];
+        newSchema[new_y * cols + new_x] = piece_obj_ref->obj.piece.schema[i];
     }
 
     bool empty_row = true;
@@ -489,12 +505,12 @@ void rotatePiece(){
         }
     }
 
-    memcpy(piece_obj.obj.piece.schema, newSchema, TAILLE_PIECE);
+    memcpy(piece_obj_ref->obj.piece.schema, newSchema, TAILLE_PIECE);
 
-    if(piece_obj.rotation == DEG_270){
-        piece_obj.rotation = DEG_0;
+    if(piece_obj_ref->rotation == DEG_270){
+        piece_obj_ref->rotation = DEG_0;
     }else{
-        piece_obj.rotation = piece_obj.rotation << 1;
+        piece_obj_ref->rotation = piece_obj_ref->rotation << 1;
     }
 }
 
@@ -556,7 +572,7 @@ int removeFullRows(){
    return isrow; 
 }
 
-bool movePiece(unsigned short padValue){
+bool movePiece(unsigned short padValue,objet_t *piece_obj_ref,objet_t *plateau_obj_ref,objet_t * next_piece_obj_ref){
     int boost = 0;
     if((padValue & KEY_DOWN) != 0){
         boost = 20;
@@ -565,39 +581,39 @@ bool movePiece(unsigned short padValue){
     }
 
     if((padValue & KEY_A) != 0){
-        if(lastRotation == piece_obj.rotation){
-                rotatePiece();
+        if(lastRotation == piece_obj_ref->rotation){
+                rotatePiece(piece_obj_ref);
         }
     }else{
-        lastRotation = piece_obj.rotation;
+        lastRotation = piece_obj_ref->rotation;
     }
 
     pieceMove2 += INITIAL_SPEED;
-    COLLISION col = getCollision();
+    COLLISION col = getCollision(piece_obj_ref,plateau_obj_ref);
 
-    if((col & (INTERNE | HAUT | BAS)) == (HAUT | BAS | INTERNE) && piece_obj.y == plateau_obj.y){
+    if((col & (INTERNE | HAUT | BAS)) == (HAUT | BAS | INTERNE) && piece_obj_ref->y == plateau_obj_ref->y){
         gameOver = true;
         return true;
     }
     
     if((padValue & KEY_UP) != 0){
         speed = 50;
-        while(movePiece(padValue & (~KEY_UP)) != true){
+        while(movePiece(padValue & (~KEY_UP),piece_obj_ref,plateau_obj_ref,next_piece_obj_ref) != true){
             char messtxt[20] = "";
-            sprintf(messtxt,"%d\r\n", piece_obj.y);
+            sprintf(messtxt,"%d\r\n", piece_obj_ref->y);
             consoleNocashMessage(messtxt);
         }
         return true;
     }
     
     if((col & INTERNE) != 0){
-        if(lastRotation != piece_obj.rotation){
+        if(lastRotation != piece_obj_ref->rotation){
             u8 i;
             for (i = 0; i < 3; ++i)
             {
-                rotatePiece();
+                rotatePiece(piece_obj_ref);
             }
-            lastRotation = piece_obj.rotation;
+            lastRotation = piece_obj_ref->rotation;
         }
     }
 
@@ -607,9 +623,9 @@ bool movePiece(unsigned short padValue){
 
     if(pieceMove2 >= 10){
         if((col & DROITE) == 0 && (padValue & KEY_RIGHT) != 0){
-            ++piece_obj.x;
+            ++piece_obj_ref->x;
         }else if((col & GAUCHE) == 0 && (padValue & KEY_LEFT) != 0){
-            --piece_obj.x;
+            --piece_obj_ref->x;
         } 
         pieceMove2 = 0;
     }
@@ -617,27 +633,27 @@ bool movePiece(unsigned short padValue){
     pieceMove += speed + boost;
 
     if((col & BAS) == 0 && pieceMove >= 50){
-        ++piece_obj.y;
+        ++piece_obj_ref->y;
         pieceMove = 0;
     }else if(col & BAS){
         u16 piece_cpt;
-        u16 offset = piece_obj.y * LARGEUR_BG1 + piece_obj.x;
+        u16 offset = piece_obj_ref->y * LARGEUR_BG1 + piece_obj_ref->x;
         for (piece_cpt = 0; piece_cpt < TAILLE_PIECE; ++piece_cpt)
         {
-            if(piece_obj.obj.piece.schema[piece_cpt] == 1){
+            if(piece_obj_ref->obj.piece.schema[piece_cpt] == 1){
                 u16 y;
                 u16 x;
                 u16 lignes;
                 u16 cols;
-                getPos(piece_cpt, &x, &y, &lignes, &cols);
+                getPos(piece_cpt, &x, &y, &lignes, &cols,piece_obj_ref);
 
-                u16 plateau_cpt = (piece_obj.y - plateau_obj.y + y) * LARGEUR_PLATEAU * 2 + (piece_obj.x - plateau_obj.x + x) * 2;
+                u16 plateau_cpt = (piece_obj_ref->y - plateau_obj_ref->y + y) * LARGEUR_PLATEAU * 2 + (piece_obj_ref->x - plateau_obj_ref->x + x) * 2;
                 u16 dest_address = BACKGROUND1_MAP_ADDRESS + offset + y * LARGEUR_BG1 + x;
                 char msg[20] = "";
                 consoleNocashMessage(msg);
-                memcpy(&plateau_obj.obj.plateau[plateau_cpt], (&mapsprite + piece_obj.obj.piece.background_offset), 2);
+                memcpy(&plateau_obj_ref->obj.plateau[plateau_cpt], (&mapsprite + piece_obj_ref->obj.piece.background_offset), 2);
                 WaitForVBlank();
-                dmaCopyVram(&mapsprite + piece_obj.obj.piece.background_offset, dest_address, 2);
+                dmaCopyVram(&mapsprite + piece_obj_ref->obj.piece.background_offset, dest_address, 2);
             }
         }
         showPiece(false);
@@ -648,7 +664,7 @@ bool movePiece(unsigned short padValue){
            spcPlaySound(0);
         }
         
-        resetPiece();
+        resetPiece(piece_obj_ref,plateau_obj_ref,next_piece_obj_ref);
         
         
          WaitForVBlank();
@@ -682,8 +698,8 @@ int main(void){
 	spcProcess();
     spcSetSoundEntry(15, 1, 6, &placebrrend-&placebrr, &placebrr, &placesound);
 	spcSetSoundEntry(15, 15,  6, &linebrrend-&linebrr, &linebrr, &linesound);
-	bootScreen();
-    menu();
+	// bootScreen();
+    // menu();
     resetVram();
     resetGame();
     spcLoad(1);
@@ -692,6 +708,7 @@ int main(void){
     while (1)
     {
         pad0 = padsCurrent(0);
+        pad1 = padsCurrent(1);
         
 		spcProcess();
 
@@ -726,7 +743,7 @@ int main(void){
 
             if(pauseGame == false){
                 speed = INITIAL_SPEED + speed_boost;
-                movePiece(pad0);
+                movePiece(pad0,&piece_obj,&plateau_obj,&next_piece_obj);
 
                 idSprite = 0;
                 for (i = 0; i < TAILLE_PIECE; ++i)
@@ -736,7 +753,7 @@ int main(void){
                         u16 x;
                         u16 lignes;
                         u16 cols;
-                        getPos(i, &x, &y, &lignes, &cols);
+                        getPos(i, &x, &y, &lignes, &cols,&piece_obj);
 
                         oamSet(idSprite * 4, (piece_obj.x + x) * 8, (piece_obj.y + y) * 8, 3, 0, 0, piece_obj.obj.piece.sprite_offset, 0);
                         ++idSprite;

@@ -43,7 +43,8 @@ typedef struct player_s
     objet_t * next_piece;
     u32 score;
     u8 idSpritePiece;
-    u8 idSpriteNextPiece;
+    u8 idSpriteNextPiece ;
+    ROTATION lastPieceRotation;
 }player_t;
 
 

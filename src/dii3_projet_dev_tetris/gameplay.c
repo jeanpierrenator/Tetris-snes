@@ -250,11 +250,11 @@ bool movePiece(unsigned short padValue,player_t *player){
     }
 
     if((padValue & KEY_A) != 0){
-        if(lastRotation == player->piece->rotation){
+        if(player->lastPieceRotation == player->piece->rotation){
                 rotatePiece(player->piece);
         }
     }else{
-        lastRotation = player->piece->rotation;
+        player->lastPieceRotation = player->piece->rotation;
     }
 
     pieceMove2 += INITIAL_SPEED;
@@ -276,13 +276,13 @@ bool movePiece(unsigned short padValue,player_t *player){
     }
     
     if((col & INTERNE) != 0){
-        if(lastRotation != player->piece->rotation){
+        if(player->lastPieceRotation != player->piece->rotation){
             u8 i;
             for (i = 0; i < 3; ++i)
             {
                 rotatePiece(player->piece);
             }
-            lastRotation = player->piece->rotation;
+            player->lastPieceRotation = player->piece->rotation;
         }
     }
 

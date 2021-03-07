@@ -4,6 +4,9 @@
 #include "soundbank.h"
 #include"gameplay.h"
 
+void mode2player();
+
+void mode1player();
 extern char snesfont;
 
 extern char gfxpsrite, gfxpsrite_end;
@@ -68,7 +71,6 @@ player_t player2;
 u8 twoPlayer =0;
 unsigned int pieceMove = 0;
 unsigned int pieceMove2 = 0;
-ROTATION lastRotation = DEG_0;
 int speed = INITIAL_SPEED;
 int speed_boost = 0;
 
@@ -153,6 +155,7 @@ void bootScreen(){
 
 void menu()
 {
+    oamInitGfxSet(&gfxpsrite, (&gfxpsrite_end-&gfxpsrite), &palsprite, (&palsprite_end-&palsprite),0, SPRITE_ADDRESS, OBJ_SIZE8);
     spcLoad(0);
     spcPlay(0); 
     spcSetModuleVolume(100);
@@ -236,23 +239,73 @@ void menu()
 	bgInitTileSet(1, &menubg4, &menubg4Palette, 1, (&menubg4_end - &menubg4), 16*2, BG_16COLORS, 0x2000);
 	bgInitMapSet(1, &menubg4Map, (&menubg4Map_end - &menubg4Map),SC_32x32, 0x0400);
 	setScreenOn();
+    oamSet(1 * 4, 55, 120, 1, 0,0 , 8, 0);
+    oamSetEx(1 * 4, OBJ_LARGE, OBJ_SHOW);
+    oamSetVisible(1 * 4,OBJ_SHOW);
+
+    
+     oamSet(2 * 4, 165, 120, 0, 1,0 , 8, 0);
+      oamSetEx(2 * 4, OBJ_LARGE, OBJ_SHOW);
+    oamSetVisible(2 * 4,OBJ_SHOW);
+    u8 pointerY = 120;
+    u8 pointerX = 55;
+    u8 pointerX2 = 170;
+    bool changePointer = false;
+    unsigned short lastPad =KEY_START;
+    pad0 =0;
 	// Wait for nothing :P
-	while((pad0 != KEY_A) && (pad0 != KEY_X)) {
+	while(pad0 != KEY_START ) {
         pad0 = padsCurrent(0);
+        if (pad0 == KEY_UP && lastPad != KEY_UP){
+            if(pointerY == 120){
+                pointerY = 140;
+                pointerX = 50;
+                pointerX2 = 180;
+            }else {
+                pointerY = 120;
+                pointerX = 55;
+                pointerX2 = 170;
+            }
+            changePointer = true;
+        }
+        if (pad0 == KEY_DOWN && lastPad != KEY_DOWN){
+            if(pointerY == 140){
+                pointerY = 120;
+                pointerX = 55;
+                pointerX2 = 170;
+            }else {
+                pointerY = 140;
+                pointerX = 50;
+                pointerX2 = 180;
+            }
+            changePointer = true;
+        }
 		WaitForVBlank();
 		scrX1++;  scrX2--;
         fpsCounter++;
 		bgSetScroll(0, scrX1,scrY1);
 		bgSetScroll(1, 0,0);
 		bgSetScroll(2, scrX2,scrY2);
+        lastPad = pad0;
 
-        if(pad0 == KEY_A){
-            twoPlayer=0;
-        }else if(pad0 == KEY_X ){
-            twoPlayer =1;
+        if (changePointer){
+            oamSet(1 * 4, pointerX, pointerY, 1, 0,0 , 8, 0);
+            oamSet(2 * 4, pointerX2, pointerY, 1, 1,0 , 8, 0);
+            changePointer = false;
         }
+
+
+       
 		
 		}
+
+         if(pointerY == 120){
+            twoPlayer=0;
+        }else{
+            twoPlayer =1;
+        }
+         oamSetVisible(1 * 4,OBJ_HIDE);
+          oamSetVisible(2 * 4,OBJ_HIDE);
         
 	
 
@@ -359,53 +412,33 @@ void resetGame(){
 	spcProcess();
 }
 
-bool lastGamePauseState = false;
-
-int main(void){
-    player1.id = 0;
-    player1.idSpriteNextPiece = 8;
-    player1.idSpritePiece= 4;
-    player1.next_piece = &next_piece_obj;
-    player1.plateau = &plateau_obj;
-    player1.piece = &piece_obj;
-
-    player2.id = 1;
-    player2.idSpriteNextPiece = 16;
-    player2.idSpritePiece= 12;
-    player2.next_piece = &next_piece_obj2;
-    player2.plateau = &plateau_obj2;
-    player2.piece = &piece_obj2;
-    unsigned short pad0;
-    unsigned short pad1;
-    u8 i, idSprite;
-    spcBoot();
-    consoleInit();
-
-    	// Set give soundbank
-	spcSetBank(&__SOUNDBANK__2);
-	spcSetBank(&__SOUNDBANK__1);
-	spcSetBank(&__SOUNDBANK__0);
-
-    // allocate around 10K of sound ram (39 256-byte blocks)
-	spcAllocateSoundRegion(39);
-
-	// Load music
-	
-    setMode(BG_MODE1,0);  bgSetDisable(1);  bgSetDisable(2);
-    spcSetModuleVolume(50);
-    
-	// Update music / sfx stream and wait vbl
-	spcProcess();
-    spcSetSoundEntry(15, 1, 6, &placebrrend-&placebrr, &placebrr, &placesound);
-	spcSetSoundEntry(15, 15,  6, &linebrrend-&linebrr, &linebrr, &linesound);
-	// bootScreen();
-     menu();
+void gameStart(){
     resetVram();
     resetGame();
     spcLoad(1);
     spcPlay(0); 
     spcSetModuleVolume(100);
-    while (1)
+    
+    if(!twoPlayer){
+        mode1player();
+    }else{
+        mode2player();
+    }
+
+}
+
+void backToMenu(){
+     consoleInit();
+     menu();
+     gameStart();
+
+}
+bool lastGamePauseState = false;
+void mode2player(){
+    unsigned short pad0;
+    unsigned short pad1;
+    bool quitting = false;
+      while (!quitting)
     {
         pad0 = padsCurrent(0);
         pad1 = padsCurrent(1);
@@ -425,7 +458,7 @@ int main(void){
                 resetGame();
             }
             if(pad0 & KEY_START){
-
+                quitting = true;
                // menu();
             }
         }else{
@@ -451,7 +484,7 @@ int main(void){
             if(pauseGame == false){
                 speed = INITIAL_SPEED + speed_boost;
                 movePiece(pad0,&player1);
-                movePiece(pad0,&player2);
+                movePiece(pad1,&player2);
 
 
                 setPieceInMemory(&player1);
@@ -468,6 +501,124 @@ int main(void){
         ++fpsCounter;
         WaitForVBlank();
     }
+    resetGame();
+    resetVram();
+    backToMenu();
+}
+
+void mode1player(){
+    unsigned short pad0;
+    bool quitting = false;
+      while (!quitting)
+    {
+        pad0 = padsCurrent(0);
+        
+		spcProcess();
+
+        if(gameOver == true){
+             spcStop();
+	        // Update music / sfx stream and wait vbl
+	        spcProcess();
+            showPiece(false,&player1);
+            consoleDrawText(1, 2, "Game Over");
+            consoleDrawText(2, 4, "Press A");
+            consoleDrawText(1, 5, "to restart");
+            if(pad0 & KEY_A){
+                // resetVram();
+                resetGame();
+            }
+            if(pad0 & KEY_START){
+                quitting = true;
+               // menu();
+            }
+        }else{
+            if(pad0 & KEY_START){
+                if(lastGamePauseState == pauseGame){
+                    if(pauseGame == false){
+                        pauseGame = true;
+                        consoleDrawText(10, 6, "Game paused");
+                        consoleDrawText(5, 7, "Press start to resume");
+
+                        //consoleDrawText(5, 10, "Press select to back to menu");
+
+                    }else{
+                        pauseGame = false;
+                        consoleDrawText(10, 6, "           ");
+                        consoleDrawText(5, 7, "                     ");
+                    }
+                }
+            }else{
+                lastGamePauseState = pauseGame;
+            }
+
+            if(pauseGame == false){
+                speed = INITIAL_SPEED + speed_boost;
+                movePiece(pad0,&player1);
+
+
+                setPieceInMemory(&player1);
+
+
+                
+            }
+        }
+        
+
+        // char messtxt[20] = "";
+		// sprintf(messtxt,"FPS=%d\r\n", snes_vblank_count);
+		// consoleNocashMessage(messtxt);
+        ++fpsCounter;
+        WaitForVBlank();
+    }
+     resetGame();
+    resetVram();
+ backToMenu();
+    
+}
+
+
+
+int main(void){
+    player1.id = 0;
+    player1.lastPieceRotation = DEG_0;
+    player1.idSpriteNextPiece = 8;
+    player1.idSpritePiece= 4;
+    player1.next_piece = &next_piece_obj;
+    player1.plateau = &plateau_obj;
+    player1.piece = &piece_obj;
+
+    player2.id = 1;
+    player2.lastPieceRotation = DEG_0;
+    player2.idSpriteNextPiece = 16;
+    player2.idSpritePiece= 12;
+    player2.next_piece = &next_piece_obj2;
+    player2.plateau = &plateau_obj2;
+    player2.piece = &piece_obj2;
+ 
+    u8 i, idSprite;
+    spcBoot();
+    consoleInit();
+
+    	// Set give soundbank
+	spcSetBank(&__SOUNDBANK__2);
+	spcSetBank(&__SOUNDBANK__1);
+	spcSetBank(&__SOUNDBANK__0);
+
+    // allocate around 10K of sound ram (39 256-byte blocks)
+	spcAllocateSoundRegion(39);
+
+	// Load music
+	
+    setMode(BG_MODE1,0);  bgSetDisable(1);  bgSetDisable(2);
+    spcSetModuleVolume(50);
+    
+	// Update music / sfx stream and wait vbl
+	spcProcess();
+    spcSetSoundEntry(15, 1, 6, &placebrrend-&placebrr, &placebrr, &placesound);
+	spcSetSoundEntry(15, 15,  6, &linebrrend-&linebrr, &linebrr, &linesound);
+	// bootScreen();
+     menu();
+    gameStart();
 
     return 0;
 }

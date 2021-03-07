@@ -45,6 +45,7 @@ extern char __SOUNDBANK__1;
 extern char __SOUNDBANK__2;
 
 extern char m0, m0_end, p0, p0_end, t0, t0_end;
+extern char m2, m2_end, p2, p2_end, t2, t2_end;
 
 
 unsigned int fpsCounter;
@@ -59,7 +60,12 @@ objet_t plateau_obj2;
 
 objet_t next_piece_obj2;
 
+player_t player1;
+player_t player2;
 
+
+
+u8 twoPlayer =0;
 unsigned int pieceMove = 0;
 unsigned int pieceMove2 = 0;
 ROTATION lastRotation = DEG_0;
@@ -231,7 +237,7 @@ void menu()
 	bgInitMapSet(1, &menubg4Map, (&menubg4Map_end - &menubg4Map),SC_32x32, 0x0400);
 	setScreenOn();
 	// Wait for nothing :P
-	while(pad0 != KEY_A) {
+	while((pad0 != KEY_A) && (pad0 != KEY_X)) {
         pad0 = padsCurrent(0);
 		WaitForVBlank();
 		scrX1++;  scrX2--;
@@ -239,8 +245,15 @@ void menu()
 		bgSetScroll(0, scrX1,scrY1);
 		bgSetScroll(1, 0,0);
 		bgSetScroll(2, scrX2,scrY2);
+
+        if(pad0 == KEY_A){
+            twoPlayer=0;
+        }else if(pad0 == KEY_X ){
+            twoPlayer =1;
+        }
 		
 		}
+        
 	
 
 }
@@ -253,17 +266,29 @@ void resetVram(){
     consoleInitText(2, 0, &snesfont);
     // Init Sprites gfx and palette with default size of 16x16
 	oamInitGfxSet(&gfxpsrite, (&gfxpsrite_end-&gfxpsrite), &palsprite, (&palsprite_end-&palsprite),0, SPRITE_ADDRESS, OBJ_SIZE8);
-
+    if (!twoPlayer){
     bgInitTileSet(0, &gfxpsrite, &palsprite, 1, (&gfxpsrite_end - &gfxpsrite), (&palsprite_end - &palsprite), BG_16COLORS, BACKGROUND1_ADDRESS);
     bgInitTileSet(1, &t0, &p0, 2, (&t0_end - &t0), (&p0_end - &p0), BG_16COLORS, BACKGROUND2_ADDRESS);
 
     bgSetMapPtr(0, BACKGROUND1_MAP_ADDRESS, SC_32x32);
 	bgInitMapSet(1, &m0, (&m0_end - &m0),SC_32x32, BACKGROUND2_MAP_ADDRESS);
+    } else {
+     bgInitTileSet(0, &gfxpsrite, &palsprite, 1, (&gfxpsrite_end - &gfxpsrite), (&palsprite_end - &palsprite), BG_16COLORS, BACKGROUND1_ADDRESS);
+    bgInitTileSet(1, &t2, &p2, 2, (&t2_end - &t2), (&p2_end - &p2), BG_16COLORS, BACKGROUND2_ADDRESS);
 
+    bgSetMapPtr(0, BACKGROUND1_MAP_ADDRESS, SC_32x32);
+	bgInitMapSet(1, &m2, (&m2_end - &m2),SC_32x32, BACKGROUND2_MAP_ADDRESS);
+    }
     setMode(BG_MODE1, BG3_MODE1_PRORITY_HIGH);
     
     u8 idSprite;
-    for (idSprite = 0; idSprite < NOMBRE_BLOCS_PIECE * 2; ++idSprite)
+    for (idSprite = 8; idSprite < 12; ++idSprite)
+    {
+        oamSet(idSprite * 4, 0, 0, 0, 0, 0, 0, 0);
+        oamSetEx(idSprite * 4, OBJ_SMALL, OBJ_SHOW);
+        oamSetVisible(idSprite * 4,OBJ_SHOW);
+    }
+    for (idSprite = 16; idSprite < 20; ++idSprite)
     {
         oamSet(idSprite * 4, 0, 0, 0, 0, 0, 0, 0);
         oamSetEx(idSprite * 4, OBJ_SMALL, OBJ_SHOW);
@@ -274,21 +299,21 @@ void resetVram(){
     WaitForVBlank();
 }
 
-void initPiece(objet_t*  next_piece_obj_ref)
+void initPiece(objet_t*  next_piece_obj_ref , u8 x, u8 y)
 {
-    next_piece_obj_ref->x = 3;
-    next_piece_obj_ref->y = 10;
+    next_piece_obj_ref->x = x;
+    next_piece_obj_ref->y = y;
     next_piece_obj_ref->rotation = DEG_0;
     int nb = fpsCounter & 0x07;
     nb = nb == 7 ? 0 : nb;
     next_piece_obj_ref->obj.piece = listPieces[nb];
 }
 
-void initPlateau(objet_t* plateau_obj_ref)
+void initPlateau(objet_t* plateau_obj_ref ,u8 x, u8 y)
 {
     
-    plateau_obj_ref->x = PLATEAU_X;
-    plateau_obj_ref->y = PLATEAU_Y;
+    plateau_obj_ref->x = x;
+    plateau_obj_ref->y = y;
     plateau_obj_ref->rotation = DEG_0;
 
     u16 i;
@@ -316,10 +341,19 @@ void resetGame(){
     consoleDrawText(1, 5, "          ");
 
     
-
-    initPlateau(&plateau_obj);
-    initPiece(&next_piece_obj);
-    resetPiece(&piece_obj,&plateau_obj,&next_piece_obj);
+    if(!twoPlayer){
+    initPlateau(&plateau_obj, PLATEAU_X,PLATEAU_Y);
+    initPiece(&next_piece_obj,NEXT_PIECE_X,NEXT_PIECE_Y);
+    resetPiece(&player1);
+    }else{
+    initPlateau(&plateau_obj, PLATEAU_X_P1,PLATEAU_Y_P1);
+    initPiece(&next_piece_obj,NEXT_PIECE_X_P1,NEXT_PIECE_Y_P1);
+    resetPiece(&player1);
+    initPlateau(&plateau_obj2, PLATEAU_X_P2,PLATEAU_Y_P2);
+    initPiece(&next_piece_obj2,NEXT_PIECE_X_P2,NEXT_PIECE_Y_P2);
+    resetPiece(&player2);
+    }
+    
     spcPlay(1);
 	        // Update music / sfx stream and wait vbl
 	spcProcess();
@@ -328,6 +362,19 @@ void resetGame(){
 bool lastGamePauseState = false;
 
 int main(void){
+    player1.id = 0;
+    player1.idSpriteNextPiece = 8;
+    player1.idSpritePiece= 4;
+    player1.next_piece = &next_piece_obj;
+    player1.plateau = &plateau_obj;
+    player1.piece = &piece_obj;
+
+    player2.id = 1;
+    player2.idSpriteNextPiece = 16;
+    player2.idSpritePiece= 12;
+    player2.next_piece = &next_piece_obj2;
+    player2.plateau = &plateau_obj2;
+    player2.piece = &piece_obj2;
     unsigned short pad0;
     unsigned short pad1;
     u8 i, idSprite;
@@ -351,8 +398,8 @@ int main(void){
 	spcProcess();
     spcSetSoundEntry(15, 1, 6, &placebrrend-&placebrr, &placebrr, &placesound);
 	spcSetSoundEntry(15, 15,  6, &linebrrend-&linebrr, &linebrr, &linesound);
-	bootScreen();
-    menu();
+	// bootScreen();
+     menu();
     resetVram();
     resetGame();
     spcLoad(1);
@@ -369,13 +416,17 @@ int main(void){
              spcStop();
 	        // Update music / sfx stream and wait vbl
 	        spcProcess();
-            showPiece(false);
+            showPiece(false,&player1);
             consoleDrawText(1, 2, "Game Over");
             consoleDrawText(2, 4, "Press A");
             consoleDrawText(1, 5, "to restart");
             if(pad0 & KEY_A){
                 // resetVram();
                 resetGame();
+            }
+            if(pad0 & KEY_START){
+
+               // menu();
             }
         }else{
             if(pad0 & KEY_START){
@@ -384,6 +435,9 @@ int main(void){
                         pauseGame = true;
                         consoleDrawText(10, 6, "Game paused");
                         consoleDrawText(5, 7, "Press start to resume");
+
+                        //consoleDrawText(5, 10, "Press select to back to menu");
+
                     }else{
                         pauseGame = false;
                         consoleDrawText(10, 6, "           ");
@@ -396,10 +450,13 @@ int main(void){
 
             if(pauseGame == false){
                 speed = INITIAL_SPEED + speed_boost;
-                movePiece(pad0,&piece_obj,&plateau_obj,&next_piece_obj);
+                movePiece(pad0,&player1);
+                movePiece(pad0,&player2);
 
-                idSprite = 0;
-                setPieceInMemory(&piece_obj,0);
+
+                setPieceInMemory(&player1);
+
+                setPieceInMemory(&player2);
                 
             }
         }

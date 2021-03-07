@@ -56,38 +56,36 @@ int getPos(u16 cpt, u16* x, u16* y, int* lignes, int* cols,objet_t *piece_obj_re
         *cols = NOMBRE_COLS_PIECE;
     }
 }
-void showPiece(bool visible){
+void showPiece(bool visible, player_t * player){
     int show = visible ? OBJ_SHOW : OBJ_HIDE;
-    u8 idSprite;
+    u8 idSprite =player->idSpritePiece;
     WaitForVBlank();
-    for (idSprite = 0; idSprite < NOMBRE_BLOCS_PIECE; ++idSprite)
+    for (; idSprite < player->idSpritePiece+4; ++idSprite)
     {
         oamSetVisible(idSprite * 4, show);
     }
 }
-void resetPiece(objet_t * piece_obj_ref,objet_t *plateau_obj_ref,objet_t *next_piece_obj_ref){
-    piece_obj_ref->x = plateau_obj_ref->x + (LARGEUR_PLATEAU - NOMBRE_COLS_PIECE) / 2;
-    piece_obj_ref->y = plateau_obj_ref->y;
-    piece_obj_ref->rotation = DEG_0;
-    piece_obj_ref->obj.piece = next_piece_obj_ref->obj.piece;
+void resetPiece(player_t * player){
+    player->piece->x = player->plateau->x + (LARGEUR_PLATEAU - NOMBRE_COLS_PIECE) / 2;
+    player->piece->y = player->plateau->y;
+    player->piece->rotation = DEG_0;
+    player->piece->obj.piece = player->next_piece->obj.piece;
     
     int nb = fpsCounter & 0x07;
     nb = nb == 7 ? 0 : nb;
-    next_piece_obj_ref->obj.piece = listPieces2[nb];
-
+    player->next_piece->obj.piece = listPieces2[nb];
     time_start = fpsCounter;
     
-    showPiece(true);
+    showPiece(true,player);
     WaitForVBlank();
-    u8 idSprite = NOMBRE_BLOCS_PIECE;
+    u8 idSprite = player->idSpriteNextPiece;
     u8 i;
     for (i = 0; i < TAILLE_PIECE; ++i)
     {
-        if(next_piece_obj_ref->obj.piece.schema[i] == 1 && idSprite < NOMBRE_BLOCS_PIECE * 2){
+        if(player->next_piece->obj.piece.schema[i] == 1 && idSprite < player->idSpriteNextPiece+4){
             u16 y = i / NOMBRE_COLS_PIECE;
             u16 x = i - y * NOMBRE_COLS_PIECE;
-
-            oamSet(idSprite * 4, (next_piece_obj_ref->x + x) * 8, (next_piece_obj_ref->y + y) * 8, 3, 0, 0, next_piece_obj_ref->obj.piece.sprite_offset, 0);
+            oamSet(idSprite * 4, (player->next_piece->x + x) * 8, (player->next_piece->y + y) * 8, 3, 0, 0, player->next_piece->obj.piece.sprite_offset, 0);
             ++idSprite;
         }
     }
@@ -243,7 +241,7 @@ int removeFullRows(objet_t * plateau_obj_ref){
     }
    return isrow; 
 }
-bool movePiece(unsigned short padValue,objet_t *piece_obj_ref,objet_t *plateau_obj_ref,objet_t * next_piece_obj_ref){
+bool movePiece(unsigned short padValue,player_t *player){
     int boost = 0;
     if((padValue & KEY_DOWN) != 0){
         boost = 20;
@@ -252,39 +250,39 @@ bool movePiece(unsigned short padValue,objet_t *piece_obj_ref,objet_t *plateau_o
     }
 
     if((padValue & KEY_A) != 0){
-        if(lastRotation == piece_obj_ref->rotation){
-                rotatePiece(piece_obj_ref);
+        if(lastRotation == player->piece->rotation){
+                rotatePiece(player->piece);
         }
     }else{
-        lastRotation = piece_obj_ref->rotation;
+        lastRotation = player->piece->rotation;
     }
 
     pieceMove2 += INITIAL_SPEED;
-    COLLISION col = getCollision(piece_obj_ref,plateau_obj_ref);
+    COLLISION col = getCollision(player->piece,player->plateau);
 
-    if((col & (INTERNE | HAUT | BAS)) == (HAUT | BAS | INTERNE) && piece_obj_ref->y == plateau_obj_ref->y){
+    if((col & (INTERNE | HAUT | BAS)) == (HAUT | BAS | INTERNE) && player->piece->y == player->plateau->y){
         gameOver = true;
         return true;
     }
     
     if((padValue & KEY_UP) != 0){
         speed = 50;
-        while(movePiece(padValue & (~KEY_UP),piece_obj_ref,plateau_obj_ref,next_piece_obj_ref) != true){
+        while(movePiece(padValue & (~KEY_UP),player) != true){
             char messtxt[20] = "";
-            sprintf(messtxt,"%d\r\n", piece_obj_ref->y);
+            sprintf(messtxt,"%d\r\n", player->piece->y);
             consoleNocashMessage(messtxt);
         }
         return true;
     }
     
     if((col & INTERNE) != 0){
-        if(lastRotation != piece_obj_ref->rotation){
+        if(lastRotation != player->piece->rotation){
             u8 i;
             for (i = 0; i < 3; ++i)
             {
-                rotatePiece(piece_obj_ref);
+                rotatePiece(player->piece);
             }
-            lastRotation = piece_obj_ref->rotation;
+            lastRotation = player->piece->rotation;
         }
     }
 
@@ -294,9 +292,9 @@ bool movePiece(unsigned short padValue,objet_t *piece_obj_ref,objet_t *plateau_o
 
     if(pieceMove2 >= 10){
         if((col & DROITE) == 0 && (padValue & KEY_RIGHT) != 0){
-            ++piece_obj_ref->x;
+            ++player->piece->x;
         }else if((col & GAUCHE) == 0 && (padValue & KEY_LEFT) != 0){
-            --piece_obj_ref->x;
+            --player->piece->x;
         } 
         pieceMove2 = 0;
     }
@@ -304,38 +302,38 @@ bool movePiece(unsigned short padValue,objet_t *piece_obj_ref,objet_t *plateau_o
     pieceMove += speed + boost;
 
     if((col & BAS) == 0 && pieceMove >= 50){
-        ++piece_obj_ref->y;
+        ++player->piece->y;
         pieceMove = 0;
    }else if(col & BAS){
         u16 piece_cpt;
-        u16 offset = piece_obj_ref->y * LARGEUR_BG1 + piece_obj_ref->x;
+        u16 offset = player->piece->y * LARGEUR_BG1 + player->piece->x;
         for (piece_cpt = 0; piece_cpt < TAILLE_PIECE; ++piece_cpt)
         {
-            if(piece_obj_ref->obj.piece.schema[piece_cpt] == 1){
+            if(player->piece->obj.piece.schema[piece_cpt] == 1){
                 u16 y;
                 u16 x;
                 u16 lignes;
                 u16 cols;
-                getPos(piece_cpt, &x, &y, &lignes, &cols,piece_obj_ref);
+                getPos(piece_cpt, &x, &y, &lignes, &cols,player->piece);
 
-                u16 plateau_cpt = (piece_obj_ref->y - plateau_obj_ref->y + y) * LARGEUR_PLATEAU * 2 + (piece_obj_ref->x - plateau_obj_ref->x + x) * 2;
+                u16 plateau_cpt = (player->piece->y - player->plateau->y + y) * LARGEUR_PLATEAU * 2 + (player->piece->x - player->plateau->x + x) * 2;
                 u16 dest_address = BACKGROUND1_MAP_ADDRESS + offset + y * LARGEUR_BG1 + x;
                 char msg[20] = "";
                 consoleNocashMessage(msg);
-                memcpy(&plateau_obj_ref->obj.plateau[plateau_cpt], (&mapsprite + piece_obj_ref->obj.piece.background_offset), 2);
+                memcpy(&player->plateau->obj.plateau[plateau_cpt], (&mapsprite + player->piece->obj.piece.background_offset), 2);
                 WaitForVBlank();
-                dmaCopyVram(&mapsprite + piece_obj_ref->obj.piece.background_offset, dest_address, 2);
+                dmaCopyVram(&mapsprite + player->piece->obj.piece.background_offset, dest_address, 2);
             }
         }
-        showPiece(false);
-        if (removeFullRows(plateau_obj_ref)){
+        showPiece(false ,player);
+        if (removeFullRows(player->plateau)){
             spcPlaySound(1);
         }else
         {
            spcPlaySound(0);
         }
         
-        resetPiece(piece_obj_ref,plateau_obj_ref,next_piece_obj_ref);
+        resetPiece(player);
         
         
          WaitForVBlank();
@@ -344,18 +342,19 @@ bool movePiece(unsigned short padValue,objet_t *piece_obj_ref,objet_t *plateau_o
     return false;
 }
 
-void setPieceInMemory(objet_t * piece_obj_ref,u8 idSprite){  
+void setPieceInMemory(player_t * player){  
     u8 i;
+    u8 idSprite = player->idSpritePiece;
     for (i = 0; i < TAILLE_PIECE; ++i)
                 {
-                    if(piece_obj_ref->obj.piece.schema[i] == 1 && idSprite < NOMBRE_BLOCS_PIECE){
+                    if(player->piece->obj.piece.schema[i] == 1 && idSprite < player->idSpritePiece+4){
                         u16 y;
                         u16 x;
                         u16 lignes;
                         u16 cols;
-                        getPos(i, &x, &y, &lignes, &cols,piece_obj_ref);
+                        getPos(i, &x, &y, &lignes, &cols,player->piece);
 
-                        oamSet(idSprite * 4, (piece_obj_ref->x + x) * 8, (piece_obj_ref->y + y) * 8, 3, 0, 0, piece_obj_ref->obj.piece.sprite_offset, 0);
+                        oamSet(idSprite * 4, (player->piece->x + x) * 8, (player->piece->y + y) * 8, 3, 0, 0, player->piece->obj.piece.sprite_offset, 0);
                         ++idSprite;
                     }
                 }

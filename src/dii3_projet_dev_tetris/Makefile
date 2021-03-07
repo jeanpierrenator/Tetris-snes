@@ -81,7 +81,11 @@ sprite8.pic: sprite8.bmp
 	$(GFXCONV) -gs8 -pc16 -po16 -pe1 -n -pr -m $<
 	#cp sprite8.map.new sprite8.map
 
-fond.pic: bg0.bmp
+fond.pic:  bg0.bmp 
+	@echo convert bitmap ... $(notdir $@)
+	$(GFXCONV) -gs8 -pc16 -po16 -pe2 -n -pr -m $<
+
+fond2.pic: bg2.bmp
 	@echo convert bitmap ... $(notdir $@)
 	$(GFXCONV) -gs8 -pc16 -po16 -pe2 -n -pr -m $<
 
@@ -114,7 +118,7 @@ bmpmenutitle.pic: bmpmenutitle.bmp
 	@echo convert bitmap ... $(notdir $@)
 	$(GFXCONV) -pr -pc16 -n -gs8 -pe1  -fbmp -m $<
 
-bitmaps : pvsneslibfont.pic sprite8.pic fond.pic pvsneslib.pic logo_polytech_1.pic soundbank.asm line.brr place.brr bmpmenudown.pic bmpmenuup.pic bmpmenucenter.pic  bmpmenutitle.pic
+bitmaps : pvsneslibfont.pic sprite8.pic fond.pic fond2.pic pvsneslib.pic logo_polytech_1.pic soundbank.asm line.brr place.brr bmpmenudown.pic bmpmenuup.pic bmpmenucenter.pic  bmpmenutitle.pic
 
 #---------------------------------------------------------------------------------
 $(OUTPUT).sfc	: $(OFILES)

@@ -10,6 +10,9 @@ typedef struct pos_s
     int y;
 } pos_t;
 
+
+
+
 typedef struct piece_s
 {
     u8 sprite_offset;
@@ -32,6 +35,16 @@ typedef struct objet_s
     obj_t obj;
 } objet_t;
 
+typedef struct player_s
+{
+    u8 id;
+    objet_t *  plateau;
+    objet_t * piece;
+    objet_t * next_piece;
+    u32 score;
+    u8 idSpritePiece;
+    u8 idSpriteNextPiece;
+}player_t;
 
 
 

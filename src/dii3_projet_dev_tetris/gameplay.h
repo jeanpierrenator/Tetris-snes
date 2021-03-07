@@ -31,12 +31,12 @@ extern char maplogo, maplogo_end;
 
 
 int getPos(u16 cpt, u16* x, u16* y, int* lignes, int* cols,objet_t *piece_obj_ref);
-void showPiece(bool visible);
-void resetPiece(objet_t * piece_obj_ref,objet_t *plateau_obj_ref,objet_t *next_piece_obj_ref);
+void showPiece(bool visible, player_t * player);
+void resetPiece(player_t * player);
 COLLISION getCollision(objet_t * piece_obj_ref,objet_t * plateau_obj_ref);
 void rotatePiece(objet_t * piece_obj_ref);
 int removeFullRows(objet_t * plateau_obj_ref);
-bool movePiece(unsigned short padValue,objet_t *piece_obj_ref,objet_t *plateau_obj_ref,objet_t * next_piece_obj_ref);
-void setPieceInMemory(objet_t * piece_obj_ref,u8 idSprite);
+bool movePiece(unsigned short padValue,player_t * player);
+void setPieceInMemory(player_t * player);
 
 #endif

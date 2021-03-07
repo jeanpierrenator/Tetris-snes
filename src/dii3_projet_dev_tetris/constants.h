@@ -23,5 +23,20 @@
 #define PLATEAU_X 14
 #define PLATEAU_Y 3
 
+#define PLATEAU_X_P1 5
+#define PLATEAU_Y_P1 4
+
+#define PLATEAU_X_P2 17
+#define PLATEAU_Y_P2 4
+
+#define NEXT_PIECE_X 3
+#define NEXT_PIECE_Y 3
+
+#define NEXT_PIECE_X_P1 0
+#define NEXT_PIECE_Y_P1 3
+
+#define NEXT_PIECE_X_P2 28
+#define NEXT_PIECE_Y_P2 3
+
 #define INITIAL_SPEED 2
 #endif

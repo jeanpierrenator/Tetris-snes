@@ -28,13 +28,13 @@ p0: .incbin "bg0.pal"
 p0_end:
 
 
+
+
 patterns:
 .incbin "pvsneslib.pic"
 patterns_end:
 
-patternslogo:
-.incbin "logo_polytech_1.pic"
-patternslogo_end:
+
 
 map:
 .incbin "pvsneslib.map"
@@ -45,13 +45,7 @@ palette:
 palette_end:
 
 
-maplogo:
-.incbin "logo_polytech_1.map"
-maplogo_end:
 
-palettelogo:
-.incbin "logo_polytech_1.pal"
-palettelogo_end:
 
 
 
@@ -59,6 +53,19 @@ palettelogo_end:
 .ends
 
 .section ".rodata2" superfree
+
+
+patternslogo:
+.incbin "logo_polytech_1.pic"
+patternslogo_end:
+
+maplogo:
+.incbin "logo_polytech_1.map"
+maplogo_end:
+
+palettelogo:
+.incbin "logo_polytech_1.pal"
+palettelogo_end:
 
 linebrr:
 .incbin "line.brr"
@@ -115,5 +122,17 @@ menubg4Map_end:
 menubg4Palette:
 .incbin "bmpmenutitle.pal"
 menubg4Palette_end:
+
+.ends
+
+.section ".rodata3" superfree
+m2: .incbin "bg2.map"
+m2_end:
+
+t2: .incbin "bg2.pic"
+t2_end:
+
+p2: .incbin "bg2.pal"
+p2_end:
 
 .ends

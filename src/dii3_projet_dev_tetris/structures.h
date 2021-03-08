@@ -45,6 +45,9 @@ typedef struct player_s
     u8 idSpritePiece;
     u8 idSpriteNextPiece ;
     ROTATION lastPieceRotation;
+    u8 speed;
+    u8 pieceMove;
+    u8 pieceMove2;
 }player_t;
 
 

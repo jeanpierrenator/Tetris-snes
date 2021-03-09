@@ -100,7 +100,7 @@ COLLISION getCollision(objet_t * piece_obj_ref,objet_t * plateau_obj_ref){
     u16 plateau_cpt;
     for (piece_cpt = 0; piece_cpt < TAILLE_PIECE; ++piece_cpt)
     {
-        if(piece_obj_ref->obj.piece.schema[piece_cpt] == 1){
+        if(piece_obj_ref->obj.piece.schema[piece_cpt] == 1 ){ 
             u16 piece_y;
             u16 piece_x;
             u16 lignes;
@@ -116,9 +116,9 @@ COLLISION getCollision(objet_t * piece_obj_ref,objet_t * plateau_obj_ref){
             if(x + piece_x <= 0 || plateau_obj_ref->obj.plateau[plateau_cpt - 1] != NONE){
                 col |= GAUCHE;
             }
-            if(x + piece_x >= LARGEUR_PLATEAU - 1 || plateau_obj_ref->obj.plateau[plateau_cpt + 1] != NONE){
-                col |= DROITE;
-            }
+            if(x + piece_x >= LARGEUR_PLATEAU - 1 || plateau_obj_ref->obj.plateau[plateau_cpt +2] != NONE){
+                 col |= DROITE;
+             }
             if(y + piece_y  <= 0 || plateau_obj_ref->obj.plateau[plateau_cpt - LARGEUR_PLATEAU * 2] != NONE){
                 col |= HAUT;
             }
@@ -255,7 +255,7 @@ bool movePiece(unsigned short padValue,player_t *player){
 
     if((col & (INTERNE | HAUT | BAS)) == (HAUT | BAS | INTERNE) && player->piece->y == player->plateau->y){
         gameOver = true;
-        looser = player->id;
+        looser = player->id;   
         return true;
     }
     
@@ -283,21 +283,32 @@ bool movePiece(unsigned short padValue,player_t *player){
         player->pieceMove2 = 0;
     }
 
-    if(player->pieceMove2 >= 10){
-        if((col & DROITE) == 0 && (padValue & KEY_RIGHT) != 0){
-            ++player->piece->x;
-        }else if((col & GAUCHE) == 0 && (padValue & KEY_LEFT) != 0){
+   
+      if(player->pieceMove2 >= 10){
+        col = getCollision(player->piece,player->plateau);
+        if((col & GAUCHE) == 0 && (padValue & KEY_LEFT) != 0){
             --player->piece->x;
+        }else if(!(col & DROITE) && (padValue & KEY_RIGHT)){
+            player->piece->x++;
         } 
         player->pieceMove2 = 0;
     }
+   
     speed = player->speed;
     player->pieceMove += speed + boost;
-
-    if((col & BAS) == 0 && player->pieceMove >= 50){
+     col = getCollision(player->piece,player->plateau);
+    if((col & BAS) == 0 && player->pieceMove >= 50 ){
         ++player->piece->y;
         player->pieceMove = 0;
-   }else if(col & BAS){
+   }else if((col & BAS) && (padValue & KEY_RIGHT) != 0 && !(col & DROITE) ){
+       player->piece->x++;
+       col = getCollision(player->piece,player->plateau);
+   }
+   else if((col & BAS) && (padValue & KEY_LEFT) != 0 && !(col & GAUCHE) ){
+       player->piece->x--;
+       col = getCollision(player->piece,player->plateau);
+   }
+    if((col & BAS)){
         u16 piece_cpt;
         u16 offset = player->piece->y * LARGEUR_BG1 + player->piece->x;
         for (piece_cpt = 0; piece_cpt < TAILLE_PIECE; ++piece_cpt)
@@ -332,6 +343,8 @@ bool movePiece(unsigned short padValue,player_t *player){
          WaitForVBlank();
         return true;
     }
+   
+     
     return false;
 }
 

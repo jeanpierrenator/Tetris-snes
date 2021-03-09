@@ -44,7 +44,6 @@ brrsamples placesound;
 
 extern char __SOUNDBANK__0;
 extern char __SOUNDBANK__1;
-extern char __SOUNDBANK__2;
 
 extern char m0, m0_end, p0, p0_end, t0, t0_end;
 extern char m2, m2_end, p2, p2_end, t2, t2_end;
@@ -80,7 +79,7 @@ piece_t listPieces[NOMBRE_PIECES] = {
         1,
         0x02,
         {1, 1, 0, 0, 0, 1, 1, 0},
-        ROUGE,
+        ORANGE, 
     },
     {
         2,
@@ -98,7 +97,7 @@ piece_t listPieces[NOMBRE_PIECES] = {
         4,
         0x08,
         {1, 1, 1, 0, 1, 0, 0, 0},
-        ORANGE,
+        ROUGE,
     },
     {
         5,
@@ -152,8 +151,8 @@ void menu()
     consoleInit();
     dmaClearVram();
     oamInitGfxSet(&gfxpsrite, (&gfxpsrite_end - &gfxpsrite), &palsprite, (&palsprite_end - &palsprite), 0, SPRITE_ADDRESS, OBJ_SIZE8);
-    spcLoad(0);
-    spcPlay(0);
+    spcLoad(MOD_GALGOX_BLUEFIRE);
+    spcPlay(MOD_GALGOX_BLUEFIRE);
     spcSetModuleVolume(100);
     spcProcess();
     short scrX1 = 0, scrY1 = 60;
@@ -407,9 +406,11 @@ void resetGame()
     consoleDrawText(2, 4, "       ");
     consoleDrawText(1, 5, "          ");
     player1.speed = INITIAL_SPEED;
+    player1.score =0;
     player1.lastPieceRotation = DEG_0;
     player2.speed = INITIAL_SPEED;
     player2.lastPieceRotation = DEG_0;
+    player2.score =0;
     if (!twoPlayer)
     {
         consoleDrawText(2, 22, "line: 0");
@@ -428,26 +429,29 @@ void resetGame()
         initPiece(&next_piece_obj2, NEXT_PIECE_X_P2, NEXT_PIECE_Y_P2);
         resetPiece(&player2);
     }
+     spcPlay(0);
 
-    spcPlay(1);
-    // Update music / sfx stream and wait vbl
-    spcProcess();
+   
 }
 
 void gameStart()
 {
     resetVram();
     resetGame();
-    spcLoad(1);
-    spcPlay(0);
+  
     spcSetModuleVolume(100);
 
     if (!twoPlayer)
     {
+        spcLoad(MOD_DIGIMON_RURY_DARK_TOWER);
+        spcPlay(0);
         mode1player();
+
     }
     else
     {
+        spcLoad(MOD_MMR_BATTLE);
+        spcPlay(0);
         mode2player();
     }
 }
@@ -462,6 +466,7 @@ void backToMenu()
 bool lastGamePauseState = false;
 void mode2player()
 {
+   
     unsigned short pad0;
     unsigned short pad1;
     bool quitting = false;
@@ -566,6 +571,9 @@ void mode2player()
 
 void mode1player()
 {
+    spcPlay(MOD_DIGIMON_RURY_DARK_TOWER);
+    // Update music / sfx stream and wait vbl
+    spcProcess();
     unsigned short pad0;
     bool quitting = false;
     while (!quitting)
@@ -674,7 +682,7 @@ int main(void)
     consoleInit();
 
     // Set give soundbank
-    spcSetBank(&__SOUNDBANK__2);
+ 
     spcSetBank(&__SOUNDBANK__1);
     spcSetBank(&__SOUNDBANK__0);
 

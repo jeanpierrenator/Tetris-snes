@@ -67,8 +67,8 @@ scoMemory score;
 u8 twoPlayer = 0;
 u8 isRowDeleted = 0;
 u8 looser = 0;
-
-
+u8 level = 1;
+u8 nblinelvl = 0;
 
 bool gameOver = false;
 bool pauseGame = false;
@@ -79,7 +79,7 @@ piece_t listPieces[NOMBRE_PIECES] = {
         1,
         0x02,
         {1, 1, 0, 0, 0, 1, 1, 0},
-        ORANGE, 
+        ORANGE,
     },
     {
         2,
@@ -118,6 +118,16 @@ piece_t listPieces[NOMBRE_PIECES] = {
         BLEU,
     },
 };
+
+void cleanConsole()
+{
+    u8 i = 1;
+
+    for (i = 1; i < 32; i++)
+    {
+        consoleDrawText(1, i, "                                                   ");
+    }
+}
 
 void bootScreen()
 {
@@ -399,20 +409,18 @@ void initPlateau(objet_t *plateau_obj_ref, u8 x, u8 y)
 
 void resetGame()
 {
-    scoreClear(&score);
+    level = 1;
+    nblinelvl = 0;
     gameOver = false;
 
-    consoleDrawText(1, 2, "         ");
-    consoleDrawText(2, 4, "       ");
-    consoleDrawText(1, 5, "          ");
-    player1.speed = INITIAL_SPEED;
-    player1.score =0;
-    player1.lastPieceRotation = DEG_0;
-    player2.speed = INITIAL_SPEED;
-    player2.lastPieceRotation = DEG_0;
-    player2.score =0;
+    cleanConsole();
+
     if (!twoPlayer)
     {
+        player1.speed = INITIAL_SPEED;
+        player1.score = 0;
+        player1.lastPieceRotation = DEG_0;
+        consoleDrawText(2, 21, "level :1");
         consoleDrawText(2, 22, "line: 0");
         initPlateau(&plateau_obj, PLATEAU_X, PLATEAU_Y);
         initPiece(&next_piece_obj, NEXT_PIECE_X, NEXT_PIECE_Y);
@@ -420,6 +428,12 @@ void resetGame()
     }
     else
     {
+        player1.speed = INITIAL_SPEED*2;
+        player1.score = 0;
+        player1.lastPieceRotation = DEG_0;
+        player2.speed = INITIAL_SPEED * 2;
+        player2.lastPieceRotation = DEG_0;
+        player2.score = 0;
         consoleDrawText(6, 1, "line : 0");
         consoleDrawText(18, 1, "line : 0");
         initPlateau(&plateau_obj, PLATEAU_X_P1, PLATEAU_Y_P1);
@@ -429,24 +443,21 @@ void resetGame()
         initPiece(&next_piece_obj2, NEXT_PIECE_X_P2, NEXT_PIECE_Y_P2);
         resetPiece(&player2);
     }
-     spcPlay(0);
-
-   
+    spcPlay(0);
 }
 
 void gameStart()
 {
     resetVram();
     resetGame();
-  
+
     spcSetModuleVolume(100);
 
     if (!twoPlayer)
     {
-        spcLoad(MOD_DIGIMON_RURY_DARK_TOWER);
+        spcLoad(MOD_CYBORGJEFF_TETRIS);
         spcPlay(0);
         mode1player();
-
     }
     else
     {
@@ -466,7 +477,7 @@ void backToMenu()
 bool lastGamePauseState = false;
 void mode2player()
 {
-   
+    spcSetModuleVolume(60);
     unsigned short pad0;
     unsigned short pad1;
     bool quitting = false;
@@ -491,9 +502,12 @@ void mode2player()
             consoleDrawText(2, 6, "Press Start");
             consoleDrawText(1, 7, "to back to menu");
 
-            if (looser){
+            if (looser)
+            {
                 consoleDrawText(8, 13, "winner player 1");
-            }else{
+            }
+            else
+            {
                 consoleDrawText(8, 13, "winner player 2");
             }
             if (pad0 & KEY_A)
@@ -545,11 +559,11 @@ void mode2player()
                     isRowDeleted = 0;
                 }
                 movePiece(pad1, &player2);
-                 if (isRowDeleted)
+                if (isRowDeleted)
                 {
                     player2.score += isRowDeleted;
                     consoleDrawText(18, 1, "line: %d", (u32)player2.score);
-                    player1.speed +=isRowDeleted;
+                    player1.speed += isRowDeleted;
                     isRowDeleted = 0;
                 }
                 setPieceInMemory(&player1);
@@ -571,9 +585,9 @@ void mode2player()
 
 void mode1player()
 {
-    spcPlay(MOD_DIGIMON_RURY_DARK_TOWER);
-    // Update music / sfx stream and wait vbl
+
     spcProcess();
+
     unsigned short pad0;
     bool quitting = false;
     while (!quitting)
@@ -636,9 +650,17 @@ void mode1player()
                 movePiece(pad0, &player1);
                 if (isRowDeleted)
                 {
+                    nblinelvl += isRowDeleted;
                     player1.score += isRowDeleted;
                     consoleDrawText(2, 22, "line: %d", (u32)player1.score);
-                    player1.speed +=isRowDeleted;
+                    if (nblinelvl >= level)
+                    {
+                        nblinelvl -= level;
+                        level++;
+                        player1.speed++;
+                        consoleDrawText(2, 21, "level: %d", (u8)level);
+                    }
+
                     isRowDeleted = 0;
                 }
                 setPieceInMemory(&player1);
@@ -658,7 +680,7 @@ void mode1player()
 
 int main(void)
 {
-    
+
     player1.id = 0;
     player1.speed = INITIAL_SPEED;
     player1.lastPieceRotation = DEG_0;
@@ -682,7 +704,7 @@ int main(void)
     consoleInit();
 
     // Set give soundbank
- 
+
     spcSetBank(&__SOUNDBANK__1);
     spcSetBank(&__SOUNDBANK__0);
 
@@ -700,7 +722,7 @@ int main(void)
     spcProcess();
     spcSetSoundEntry(15, 1, 6, &placebrrend - &placebrr, &placebrr, &placesound);
     spcSetSoundEntry(15, 15, 6, &linebrrend - &linebrr, &linebrr, &linesound);
-    //bootScreen();
+    bootScreen();
     menu();
     gameStart();
 

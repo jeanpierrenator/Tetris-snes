@@ -284,8 +284,7 @@ bool movePiece(unsigned short padValue,player_t *player){
     }
 
    
-      if(player->pieceMove2 >= 10){
-        col = getCollision(player->piece,player->plateau);
+      if(player->pieceMove2 >= 7){
         if((col & GAUCHE) == 0 && (padValue & KEY_LEFT) != 0){
             --player->piece->x;
         }else if(!(col & DROITE) && (padValue & KEY_RIGHT)){
